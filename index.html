@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess - Offline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #161512;
+            color: #d0d0d0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .main-board-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .player-info {
+            width: 100%;
+            max-width: 1000px;
+            background: #2b2925;
+            padding: 12px 16px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-info.active {
+            background: #3d3935;
+            box-shadow: 0 0 0 2px #759656;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .player-timer {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #d0d0d0;
+        }
+
+        .player-info.active .player-timer {
+            color: #759656;
+        }
+
+        .player-timer.low-time {
+            color: #de464f !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .captured-pieces {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            min-height: 24px;
+        }
+
+        .captured-piece {
+            width: 27px;
+            height: 27px;
+            opacity: 0.7;
+        }
+
+        .board-wrapper {
+            position: relative;
+        }
+
+        .board-wrapper.flipped {
+            transform: rotate(180deg);
+        }
+
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 1000px;
+            height: 1000px;
+            border: 3px solid #2b2925;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .square {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .square.light {
+            background-color: #f0d9b5;
+        }
+
+        .square.dark {
+            background-color: #b58863;
+        }
+
+        .square.selected {
+            background-color: #829769 !important;
+        }
+
+        .square.legal-move::after {
+            content: '';
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            background-color: rgba(20, 85, 30, 0.5);
+            border-radius: 50%;
+        }
+
+        .square.legal-move.has-piece::after {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border: 4px solid rgba(20, 85, 30, 0.7);
+            border-radius: 0;
+        }
+
+        .square.last-move {
+            background-color: rgba(155, 199, 0, 0.41) !important;
+        }
+
+        .square.in-check {
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.7) 0%, transparent 70%);
+        }
+
+        .piece {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+
+        .board-wrapper.flipped .piece {
+            transform: rotate(180deg);
+        }
+
+        .piece:active {
+            cursor: grabbing;
+        }
+
+        .piece.dragging {
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+
+        .sidebar {
+            background: #2b2925;
+            border-radius: 6px;
+            padding: 20px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: #3d3935;
+            border: none;
+            color: #d0d0d0;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4d4945;
+        }
+
+        button.primary {
+            background: #759656;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #85a666;
+        }
+
+        .time-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .time-control-btn {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .move-history {
+            background: #161512;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .move-history h3 {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #959595;
+        }
+
+        .move-pair {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .move-number {
+            color: #959595;
+            width: 30px;
+        }
+
+        .move {
+            flex: 1;
+            padding: 4px 8px;
+            background: #2b2925;
+            border-radius: 3px;
+        }
+
+        .game-status {
+            background: #3d3935;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .game-status.check {
+            background: #de464f;
+            color: white;
+        }
+
+        .game-status.checkmate {
+            background: #759656;
+            color: white;
+            font-size: 18px;
+        }
+
+        .game-status.stalemate {
+            background: #959595;
+            color: white;
+        }
+
+        .promotion-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .promotion-dialog.active {
+            display: flex;
+        }
+
+        .promotion-choices {
+            background: #2b2925;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .promotion-piece {
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .promotion-piece:hover {
+            background: #3d3935;
+        }
+
+        .game-end-overlay {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            font-size: 36px;
+            font-weight: 700;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            border: 3px solid #759656;
+        }
+
+        .game-end-overlay.active {
+            display: block;
+        }
+
+        .game-end-overlay.checkmate {
+            border-color: #759656;
+        }
+
+        .game-end-overlay.stalemate {
+            border-color: #959595;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-width: 600px;
+            }
+        }
+
+        @media (max-width: 950px) {
+            #chessboard {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1;
+            }
+
+            .player-info {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-board-area">
+            <div class="player-info" id="blackInfo">
+                <div>
+                    <div class="player-name">Black</div>
+                    <div class="captured-pieces" id="blackCaptured"></div>
+                </div>
+                <div class="player-timer" id="blackTimer">10:00</div>
+            </div>
+
+            <div class="board-wrapper" id="boardWrapper">
+                <div id="chessboard"></div>
+                <div class="game-end-overlay" id="gameEndOverlay"></div>
+            </div>
+
+            <div class="player-info active" id="whiteInfo">
+                <div>
+                    <div class="player-name">White</div>
+                    <div class="captured-pieces" id="whiteCaptured"></div>
+                </div>
+                <div class="player-timer" id="whiteTimer">10:00</div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="game-status" id="gameStatus">White to move</div>
+            
+            <div class="controls">
+                <button class="primary" onclick="game.newGame()">New Game</button>
+                <button onclick="game.resetGame()">Reset</button>
+            </div>
+
+            <div>
+                <h3 style="margin-bottom: 10px; font-size: 14px; color: #959595;">Time Control</h3>
+                <div class="time-controls">
+                    <button class="time-control-btn" onclick="game.setTimeControl(60)">1+0</button>
+                    <button class="time-control-btn" onclick="game.setTimeControl(180)">3+0</button>
+                    <button class="time-control-btn" onclick="game.setTimeControl(300)">5+0</button>
+                    <button class="time-control-btn" onclick="game.setTimeControl(600)">10+0</button>
+                    <button class="time-control-btn" onclick="game.setTimeControl(900)">15+0</button>
+                    <button class="time-control-btn" onclick="game.setTimeControl(1800)">30+0</button>
+                </div>
+            </div>
+
+            <div class="move-history">
+                <h3>Move History</h3>
+                <div id="moveHistory"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="promotion-dialog" id="promotionDialog">
+        <div class="promotion-choices" id="promotionChoices"></div>
+    </div>
+
+    <script>
+        const PIECES_SVG = {
+            'K': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22.5,11.63 L 22.5,6" stroke-linejoin="miter"/><path d="M 20,8 L 25,8" stroke-linejoin="miter"/><path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" fill="#fff" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 12.5,37 C 18,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 20,16 10.5,13 6.5,19.5 C 3.5,25.5 12.5,30 12.5,30 L 12.5,37" fill="#fff"/><path d="M 12.5,30 C 18,27 27,27 32.5,30" fill="none"/><path d="M 12.5,33.5 C 18,30.5 27,30.5 32.5,33.5" fill="none"/><path d="M 12.5,37 C 18,34 27,34 32.5,37" fill="none"/></g></svg>',
+            'Q': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38.5,13.5 L 31,25 L 30.7,10.9 L 25.5,24.5 L 22.5,10 L 19.5,24.5 L 14.3,10.9 L 14,25 L 6.5,13.5 L 9,26 z"/><path d="M 9,26 C 9,28 10.5,28 11.5,30 C 12.5,31.5 12.5,31 12,33.5 C 10.5,34.5 11,36 11,36 C 9.5,37.5 11,38.5 11,38.5 C 17.5,39.5 27.5,39.5 34,38.5 C 34,38.5 35.5,37.5 34,36 C 34,36 34.5,34.5 33,33.5 C 32.5,31 32.5,31.5 33.5,30 C 34.5,28 36,28 36,26 C 30,24.5 15,24.5 9,26 z"/><path d="M 11.5,30 C 15,29 30,29 33.5,30" fill="none"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="31" cy="9" r="2"/><circle cx="39" cy="12" r="2"/><path d="M 11,38.5 A 35,35 1 0 0 34,38.5" fill="none" stroke-linecap="butt"/><g fill="none" stroke="#000"><path d="M 11,29 A 35,35 1 0 1 34,29"/><path d="M 12.5,31.5 L 32.5,31.5"/><path d="M 11.5,34.5 A 35,35 1 0 0 33.5,34.5"/><path d="M 10.5,37.5 A 35,35 1 0 0 34.5,37.5"/></g></g></svg>',
+            'R': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#fff" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 9,39 L 36,39 L 36,36 L 9,36 L 9,39 z " stroke-linecap="butt"/><path d="M 12.5,32 L 14,29.5 L 31,29.5 L 32.5,32 L 12.5,32 z " stroke-linecap="butt"/><path d="M 12,36 L 12,32 L 33,32 L 33,36 L 12,36 z " stroke-linecap="butt"/><path d="M 14,29.5 L 14,16.5 L 31,16.5 L 31,29.5 L 14,29.5 z " stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 14,16.5 L 11,14 L 34,14 L 31,16.5 L 14,16.5 z " stroke-linecap="butt"/><path d="M 11,14 L 11,9 L 15,9 L 15,11 L 20,11 L 20,9 L 25,9 L 25,11 L 30,11 L 30,9 L 34,9 L 34,14 L 11,14 z " stroke-linecap="butt"/><path d="M 12,35.5 L 33,35.5 L 33,35.5" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="miter"/><path d="M 13,31.5 L 32,31.5" fill="none" stroke="#000" stroke-width="1"/><path d="M 14,29.5 L 31,29.5" fill="none" stroke="#000" stroke-width="1"/><path d="M 14,16.5 L 31,16.5" fill="none" stroke="#000" stroke-width="1"/><path d="M 11,14 L 34,14" fill="none" stroke="#000" stroke-width="1"/></g></svg>',
+            'B': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#fff" stroke-linecap="butt"><path d="M 9,36 C 12.39,35.03 19.11,36.43 22.5,34 C 25.89,36.43 32.61,35.03 36,36 C 36,36 37.65,36.54 39,38 C 38.32,38.97 37.35,38.99 36,38.5 C 32.61,37.53 25.89,38.96 22.5,37.5 C 19.11,38.96 12.39,37.53 9,38.5 C 7.65,38.99 6.68,38.97 6,38 C 7.35,36.54 9,36 9,36 z"/><path d="M 15,32 C 17.5,34.5 27.5,34.5 30,32 C 30.5,30.5 30,30 30,30 C 30,27.5 27.5,26 27.5,26 C 33,24.5 33.5,14.5 22.5,10.5 C 11.5,14.5 12,24.5 17.5,26 C 17.5,26 15,27.5 15,30 C 15,30 14.5,30.5 15,32 z"/><path d="M 25 8 A 2.5 2.5 0 1 1  20,8 A 2.5 2.5 0 1 1  25 8 z"/></g><path d="M 17.5,26 L 27.5,26 M 15,30 L 30,30 M 22.5,15.5 L 22.5,20.5 M 20,18 L 25,18" fill="none" stroke-linejoin="miter"/></g></svg>',
+            'N': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" fill="#fff"/><path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10" fill="#fff"/><path d="M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z" fill="#000"/><path d="M 15 15.5 A 0.5 1.5 0 1 1  14,15.5 A 0.5 1.5 0 1 1  15 15.5 z" fill="#000" transform="matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)"/><path d="M 24.55,10.4 L 24.1,11.85 L 24.6,12 C 27.75,13 30.25,14.49 32.5,18.75 C 34.75,23.01 35.75,29.06 35.25,39 L 35.2,39.5 L 37.45,39.5 L 37.5,39 C 38,28.94 36.62,22.15 34.25,17.66 C 31.88,13.17 28.46,11.02 25.06,10.5 L 24.55,10.4 z " fill="#fff" stroke="none"/></g></svg>',
+            'P': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M 22,9 C 19.79,9 18,10.79 18,13 C 18,13.89 18.29,14.71 18.78,15.38 C 16.83,16.5 15.5,18.59 15.5,21 C 15.5,23.03 16.44,24.84 17.91,26.03 C 14.91,27.09 10.5,31.58 10.5,39.5 L 33.5,39.5 C 33.5,31.58 29.09,27.09 26.09,26.03 C 27.56,24.84 28.5,23.03 28.5,21 C 28.5,18.59 27.17,16.5 25.22,15.38 C 25.71,14.71 26,13.89 26,13 C 26,10.79 24.21,9 22,9 z " fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>',
+            'k': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22.5,11.63 L 22.5,6" stroke-linejoin="miter"/><path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" fill="#000" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 12.5,37 C 18,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 20,16 10.5,13 6.5,19.5 C 3.5,25.5 12.5,30 12.5,30 L 12.5,37" fill="#000"/><path d="M 20,8 L 25,8" stroke-linejoin="miter"/><path d="M 32,29.5 C 32,29.5 40.5,25.5 38.03,19.85 C 34.15,14 25,18 22.5,24.5 L 22.5,26.6 L 22.5,24.5 C 20,18 10.85,14 6.97,19.85 C 4.5,25.5 13,29.5 13,29.5" fill="none" stroke="#fff"/><path d="M 12.5,30 C 18,27 27,27 32.5,30 M 12.5,33.5 C 18,30.5 27,30.5 32.5,33.5 M 12.5,37 C 18,34 27,34 32.5,37" fill="none" stroke="#fff"/></g></svg>',
+            'q': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g stroke="none"><circle cx="6" cy="12" r="2.75"/><circle cx="14" cy="9" r="2.75"/><circle cx="22.5" cy="8" r="2.75"/><circle cx="31" cy="9" r="2.75"/><circle cx="39" cy="12" r="2.75"/></g><path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38.5,13.5 L 31,25 L 30.7,10.9 L 25.5,24.5 L 22.5,10 L 19.5,24.5 L 14.3,10.9 L 14,25 L 6.5,13.5 L 9,26 z" stroke-linecap="butt" fill="#000"/><path d="M 9,26 C 9,28 10.5,28 11.5,30 C 12.5,31.5 12.5,31 12,33.5 C 10.5,34.5 11,36 11,36 C 9.5,37.5 11,38.5 11,38.5 C 17.5,39.5 27.5,39.5 34,38.5 C 34,38.5 35.5,37.5 34,36 C 34,36 34.5,34.5 33,33.5 C 32.5,31 32.5,31.5 33.5,30 C 34.5,28 36,28 36,26 C 30,24.5 15,24.5 9,26 z" stroke-linecap="butt" fill="#000"/><path d="M 11,38.5 A 35,35 1 0 0 34,38.5" fill="none" stroke-linecap="butt"/><path d="M 11,29 A 35,35 1 0 1 34,29 M 12.5,31.5 L 32.5,31.5" fill="none" stroke="#fff"/><path d="M 11.5,34.5 A 35,35 1 0 0 33.5,34.5" fill="none" stroke="#fff"/><path d="M 10.5,37.5 A 35,35 1 0 0 34.5,37.5" fill="none" stroke="#fff"/></g></svg>',
+            'r': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="#000" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 9,39 L 36,39 L 36,36 L 9,36 L 9,39 z " stroke-linecap="butt"/><path d="M 12,36 L 12,32 L 33,32 L 33,36 L 12,36 z " stroke-linecap="butt"/><path d="M 11,14 L 11,9 L 15,9 L 15,11 L 20,11 L 20,9 L 25,9 L 25,11 L 30,11 L 30,9 L 34,9 L 34,14" stroke-linecap="butt"/><path d="M 34,14 L 31,17 L 14,17 L 11,14"/><path d="M 31,17 L 31,29.5 L 14,29.5 L 14,17" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 31,29.5 L 32.5,32 L 12.5,32 L 14,29.5"/><path d="M 11,14 L 34,14" fill="none" stroke-linejoin="miter"/><path d="M 12,35.5 L 33,35.5 L 33,35.5" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="miter"/><path d="M 13,31.5 L 32,31.5" fill="none" stroke="#fff" stroke-width="1"/><path d="M 14,29.5 L 31,29.5" fill="none" stroke="#fff" stroke-width="1"/><path d="M 14,16.5 L 31,16.5" fill="none" stroke="#fff" stroke-width="1"/><path d="M 11,14 L 34,14" fill="none" stroke="#fff" stroke-width="1"/></g></svg>',
+            'b': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#000" stroke-linecap="butt"><path d="M 9,36 C 12.39,35.03 19.11,36.43 22.5,34 C 25.89,36.43 32.61,35.03 36,36 C 36,36 37.65,36.54 39,38 C 38.32,38.97 37.35,38.99 36,38.5 C 32.61,37.53 25.89,38.96 22.5,37.5 C 19.11,38.96 12.39,37.53 9,38.5 C 7.65,38.99 6.68,38.97 6,38 C 7.35,36.54 9,36 9,36 z"/><path d="M 15,32 C 17.5,34.5 27.5,34.5 30,32 C 30.5,30.5 30,30 30,30 C 30,27.5 27.5,26 27.5,26 C 33,24.5 33.5,14.5 22.5,10.5 C 11.5,14.5 12,24.5 17.5,26 C 17.5,26 15,27.5 15,30 C 15,30 14.5,30.5 15,32 z"/><path d="M 25 8 A 2.5 2.5 0 1 1  20,8 A 2.5 2.5 0 1 1  25 8 z"/></g><path d="M 17.5,26 L 27.5,26 M 15,30 L 30,30 M 22.5,15.5 L 22.5,20.5 M 20,18 L 25,18" fill="none" stroke="#fff" stroke-linejoin="miter"/></g></svg>',
+            'p': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><path d="M 22,9 C 19.79,9 18,10.79 18,13 C 18,13.89 18.29,14.71 18.78,15.38 C 16.83,16.5 15.5,18.59 15.5,21 C 15.5,23.03 16.44,24.84 17.91,26.03 C 14.91,27.09 10.5,31.58 10.5,39.5 L 33.5,39.5 C 33.5,31.58 29.09,27.09 26.09,26.03 C 27.56,24.84 28.5,23.03 28.5,21 C 28.5,18.59 27.17,16.5 25.22,15.38 C 25.71,14.71 26,13.89 26,13 C 26,10.79 24.21,9 22,9 z " fill="#000" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>',
+            'n': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" fill="#000"/><path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10" fill="#000"/><path d="M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z" fill="#fff"/><path d="M 15 15.5 A 0.5 1.5 0 1 1  14,15.5 A 0.5 1.5 0 1 1  15 15.5 z" fill="#fff" transform="matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)"/><path d="M 24.55,10.4 L 24.1,11.85 L 24.6,12 C 27.75,13 30.25,14.49 32.5,18.75 C 34.75,23.01 35.75,29.06 35.25,39 L 35.2,39.5 L 37.45,39.5 L 37.5,39 C 38,28.94 36.62,22.15 34.25,17.66 C 31.88,13.17 28.46,11.02 25.06,10.5 L 24.55,10.4 z " fill="#000" stroke="none"/></g></svg>'
+        };
+
+        const MOVE_SOUND = 'data:audio/wav;base64,UklGRhQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+        const CAPTURE_SOUND = 'data:audio/wav;base64,UklGRhQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+
+        class ChessGame {
+            constructor() {
+                this.board = this.initializeBoard();
+                this.currentPlayer = 'white';
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.moveHistory = [];
+                this.capturedPieces = { white: [], black: [] };
+                this.lastMove = null;
+                this.enPassantTarget = null;
+                this.castlingRights = {
+                    white: { kingside: true, queenside: true },
+                    black: { kingside: true, queenside: true }
+                };
+                this.kingPositions = { white: [7, 4], black: [0, 4] };
+                this.gameOver = false;
+                this.whiteTime = 600;
+                this.blackTime = 600;
+                this.timerInterval = null;
+                this.boardFlipped = false;
+                this.promotionPending = null;
+                this.gameStarted = false;
+                
+                this.renderBoard();
+                this.updateStatus();
+            }
+
+            initializeBoard() {
+                return [
+                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+                ];
+            }
+
+            renderBoard() {
+                const chessboard = document.getElementById('chessboard');
+                chessboard.innerHTML = '';
+
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const square = document.createElement('div');
+                        square.className = 'square';
+                        square.className += (row + col) % 2 === 0 ? ' light' : ' dark';
+                        square.dataset.row = row;
+                        square.dataset.col = col;
+
+                        const piece = this.board[row][col];
+                        if (piece) {
+                            const pieceElement = document.createElement('div');
+                            pieceElement.className = 'piece';
+                            pieceElement.innerHTML = PIECES_SVG[piece];
+                            pieceElement.draggable = true;
+                            square.appendChild(pieceElement);
+                        }
+
+                        if (this.lastMove && 
+                            ((this.lastMove.from[0] === row && this.lastMove.from[1] === col) ||
+                             (this.lastMove.to[0] === row && this.lastMove.to[1] === col))) {
+                            square.classList.add('last-move');
+                        }
+
+                        square.addEventListener('click', (e) => this.handleSquareClick(row, col, e));
+                        square.addEventListener('dragstart', (e) => this.handleDragStart(row, col, e));
+                        square.addEventListener('dragover', (e) => e.preventDefault());
+                        square.addEventListener('drop', (e) => this.handleDrop(row, col, e));
+
+                        chessboard.appendChild(square);
+                    }
+                }
+
+                this.highlightLegalMoves();
+                this.highlightCheck();
+            }
+
+            handleSquareClick(row, col, e) {
+                if (this.gameOver) return;
+
+                const piece = this.board[row][col];
+                const pieceColor = this.getPieceColor(piece);
+
+                if (this.selectedSquare) {
+                    if (this.isLegalMove(this.selectedSquare, [row, col])) {
+                        this.makeMove(this.selectedSquare, [row, col]);
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                    } else if (pieceColor === this.currentPlayer) {
+                        this.selectedSquare = [row, col];
+                        this.legalMoves = this.getLegalMovesForPiece(row, col);
+                    } else {
+                        this.selectedSquare = null;
+                        this.legalMoves = [];
+                    }
+                } else if (pieceColor === this.currentPlayer) {
+                    this.selectedSquare = [row, col];
+                    this.legalMoves = this.getLegalMovesForPiece(row, col);
+                }
+
+                this.renderBoard();
+            }
+
+            handleDragStart(row, col, e) {
+                const piece = this.board[row][col];
+                if (this.getPieceColor(piece) !== this.currentPlayer || this.gameOver) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', JSON.stringify([row, col]));
+                this.selectedSquare = [row, col];
+                this.legalMoves = this.getLegalMovesForPiece(row, col);
+                setTimeout(() => this.renderBoard(), 0);
+            }
+
+            handleDrop(row, col, e) {
+                e.preventDefault();
+                const from = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (this.isLegalMove(from, [row, col])) {
+                    this.makeMove(from, [row, col]);
+                }
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.renderBoard();
+            }
+
+            makeMove(from, to) {
+                const [fromRow, fromCol] = from;
+                const [toRow, toCol] = to;
+                const piece = this.board[fromRow][fromCol];
+                const capturedPiece = this.board[toRow][toCol];
+                const pieceType = piece.toLowerCase();
+
+                let moveNotation = this.getMoveNotation(from, to, piece, capturedPiece);
+
+                if (capturedPiece) {
+                    const capturedColor = this.getPieceColor(capturedPiece);
+                    this.capturedPieces[capturedColor].push(capturedPiece);
+                    this.playSound(CAPTURE_SOUND);
+                    
+                    if (capturedPiece.toLowerCase() === 'r') {
+                        if (capturedColor === 'white' && toRow === 7) {
+                            if (toCol === 0) this.castlingRights.white.queenside = false;
+                            if (toCol === 7) this.castlingRights.white.kingside = false;
+                        } else if (capturedColor === 'black' && toRow === 0) {
+                            if (toCol === 0) this.castlingRights.black.queenside = false;
+                            if (toCol === 7) this.castlingRights.black.kingside = false;
+                        }
+                    }
+                } else {
+                    this.playSound(MOVE_SOUND);
+                }
+
+                if (pieceType === 'p' && toCol !== fromCol && !capturedPiece) {
+                    const capturedRow = this.currentPlayer === 'white' ? toRow + 1 : toRow - 1;
+                    const enPassantCaptured = this.board[capturedRow][toCol];
+                    this.capturedPieces[this.currentPlayer === 'white' ? 'black' : 'white'].push(enPassantCaptured);
+                    this.board[capturedRow][toCol] = null;
+                }
+
+                if (pieceType === 'k' && Math.abs(toCol - fromCol) === 2) {
+                    const rookFromCol = toCol > fromCol ? 7 : 0;
+                    const rookToCol = toCol > fromCol ? toCol - 1 : toCol + 1;
+                    this.board[fromRow][rookToCol] = this.board[fromRow][rookFromCol];
+                    this.board[fromRow][rookFromCol] = null;
+                }
+
+                this.board[toRow][toCol] = piece;
+                this.board[fromRow][fromCol] = null;
+
+                if (pieceType === 'k') {
+                    this.kingPositions[this.currentPlayer] = [toRow, toCol];
+                    this.castlingRights[this.currentPlayer] = { kingside: false, queenside: false };
+                }
+
+                if (pieceType === 'r') {
+                    if (fromCol === 0) this.castlingRights[this.currentPlayer].queenside = false;
+                    if (fromCol === 7) this.castlingRights[this.currentPlayer].kingside = false;
+                }
+
+                if (pieceType === 'p' && Math.abs(toRow - fromRow) === 2) {
+                    this.enPassantTarget = [(fromRow + toRow) / 2, toCol];
+                } else {
+                    this.enPassantTarget = null;
+                }
+
+                if (pieceType === 'p' && (toRow === 0 || toRow === 7)) {
+                    this.promotionPending = { 
+                        position: [toRow, toCol], 
+                        color: this.currentPlayer,
+                        from: from,
+                        to: to,
+                        moveNotation: moveNotation
+                    };
+                    this.showPromotionDialog();
+                    return;
+                }
+
+                if (!this.gameStarted) {
+                    this.gameStarted = true;
+                }
+
+                this.lastMove = { from, to };
+                this.moveHistory.push(moveNotation);
+                this.switchPlayer();
+                this.flipBoard();
+                this.updateMoveHistory();
+                this.updateCapturedPieces();
+                this.renderBoard();
+                this.updateStatus();
+            }
+
+            showPromotionDialog() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+
+                const dialog = document.getElementById('promotionDialog');
+                const choices = document.getElementById('promotionChoices');
+                choices.innerHTML = '';
+
+                const pieces = this.currentPlayer === 'white' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
+                pieces.forEach(piece => {
+                    const div = document.createElement('div');
+                    div.className = 'promotion-piece';
+                    div.innerHTML = PIECES_SVG[piece];
+                    div.onclick = () => this.handlePromotion(piece);
+                    choices.appendChild(div);
+                });
+
+                dialog.classList.add('active');
+            }
+
+            handlePromotion(piece) {
+                const [row, col] = this.promotionPending.position;
+                this.board[row][col] = piece;
+                
+                const moveNotation = this.promotionPending.moveNotation + '=' + piece.toUpperCase();
+                this.lastMove = { from: this.promotionPending.from, to: this.promotionPending.to };
+                this.moveHistory.push(moveNotation);
+                
+                this.promotionPending = null;
+                document.getElementById('promotionDialog').classList.remove('active');
+                
+                this.switchPlayer();
+                this.flipBoard();
+                this.updateMoveHistory();
+                this.updateCapturedPieces();
+                this.renderBoard();
+                this.updateStatus();
+            }
+
+            getLegalMovesForPiece(row, col) {
+                const piece = this.board[row][col];
+                if (!piece) return [];
+
+                const pieceType = piece.toLowerCase();
+                const moves = [];
+
+                switch (pieceType) {
+                    case 'p':
+                        moves.push(...this.getPawnMoves(row, col, piece));
+                        break;
+                    case 'n':
+                        moves.push(...this.getKnightMoves(row, col, piece));
+                        break;
+                    case 'b':
+                        moves.push(...this.getBishopMoves(row, col, piece));
+                        break;
+                    case 'r':
+                        moves.push(...this.getRookMoves(row, col, piece));
+                        break;
+                    case 'q':
+                        moves.push(...this.getQueenMoves(row, col, piece));
+                        break;
+                    case 'k':
+                        moves.push(...this.getKingMoves(row, col, piece));
+                        break;
+                }
+
+                return moves.filter(move => !this.wouldBeInCheck([row, col], move));
+            }
+
+            getPawnMoves(row, col, piece) {
+                const moves = [];
+                const direction = piece === piece.toUpperCase() ? -1 : 1;
+                const startRow = piece === piece.toUpperCase() ? 6 : 1;
+
+                if (this.isValidSquare(row + direction, col) && !this.board[row + direction][col]) {
+                    moves.push([row + direction, col]);
+                    if (row === startRow && !this.board[row + 2 * direction][col]) {
+                        moves.push([row + 2 * direction, col]);
+                    }
+                }
+
+                [[-1, 1], [1, 1]].forEach(([dc, dr]) => {
+                    const newRow = row + direction;
+                    const newCol = col + dc;
+                    if (this.isValidSquare(newRow, newCol)) {
+                        const target = this.board[newRow][newCol];
+                        if (target && this.getPieceColor(target) !== this.getPieceColor(piece)) {
+                            moves.push([newRow, newCol]);
+                        }
+                        if (this.enPassantTarget && 
+                            this.enPassantTarget[0] === newRow && 
+                            this.enPassantTarget[1] === newCol) {
+                            moves.push([newRow, newCol]);
+                        }
+                    }
+                });
+
+                return moves;
+            }
+
+            getKnightMoves(row, col, piece) {
+                const moves = [];
+                const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+
+                knightMoves.forEach(([dr, dc]) => {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (this.isValidSquare(newRow, newCol)) {
+                        const target = this.board[newRow][newCol];
+                        if (!target || this.getPieceColor(target) !== this.getPieceColor(piece)) {
+                            moves.push([newRow, newCol]);
+                        }
+                    }
+                });
+
+                return moves;
+            }
+
+            getBishopMoves(row, col, piece) {
+                return this.getSlidingMoves(row, col, piece, [[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+            }
+
+            getRookMoves(row, col, piece) {
+                return this.getSlidingMoves(row, col, piece, [[-1, 0], [1, 0], [0, -1], [0, 1]]);
+            }
+
+            getQueenMoves(row, col, piece) {
+                return this.getSlidingMoves(row, col, piece, [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]);
+            }
+
+            getSlidingMoves(row, col, piece, directions) {
+                const moves = [];
+                directions.forEach(([dr, dc]) => {
+                    let newRow = row + dr;
+                    let newCol = col + dc;
+                    while (this.isValidSquare(newRow, newCol)) {
+                        const target = this.board[newRow][newCol];
+                        if (!target) {
+                            moves.push([newRow, newCol]);
+                        } else {
+                            if (this.getPieceColor(target) !== this.getPieceColor(piece)) {
+                                moves.push([newRow, newCol]);
+                            }
+                            break;
+                        }
+                        newRow += dr;
+                        newCol += dc;
+                    }
+                });
+                return moves;
+            }
+
+            getKingMoves(row, col, piece) {
+                const moves = [];
+                const kingMoves = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
+                kingMoves.forEach(([dr, dc]) => {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (this.isValidSquare(newRow, newCol)) {
+                        const target = this.board[newRow][newCol];
+                        if (!target || this.getPieceColor(target) !== this.getPieceColor(piece)) {
+                            moves.push([newRow, newCol]);
+                        }
+                    }
+                });
+
+                if (this.castlingRights[this.currentPlayer].kingside && this.canCastle(row, col, true)) {
+                    moves.push([row, col + 2]);
+                }
+                if (this.castlingRights[this.currentPlayer].queenside && this.canCastle(row, col, false)) {
+                    moves.push([row, col - 2]);
+                }
+
+                return moves;
+            }
+
+            canCastle(row, col, kingside) {
+                const direction = kingside ? 1 : -1;
+                const rookCol = kingside ? 7 : 0;
+                const squares = kingside ? [col + 1, col + 2] : [col - 1, col - 2, col - 3];
+
+                for (let square of squares) {
+                    if (this.board[row][square]) return false;
+                }
+
+                if (!this.board[row][rookCol]) return false;
+
+                for (let i = 0; i <= (kingside ? 2 : 2); i++) {
+                    if (this.isSquareUnderAttack([row, col + i * direction], this.currentPlayer)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            isSquareUnderAttack(square, byColor) {
+                const [row, col] = square;
+                const opponentColor = byColor === 'white' ? 'black' : 'white';
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const piece = this.board[r][c];
+                        if (piece && this.getPieceColor(piece) === opponentColor) {
+                            const moves = this.getLegalMovesForPieceIgnoringCheck(r, c);
+                            if (moves.some(m => m[0] === row && m[1] === col)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            getLegalMovesForPieceIgnoringCheck(row, col) {
+                const piece = this.board[row][col];
+                if (!piece) return [];
+
+                const pieceType = piece.toLowerCase();
+                const moves = [];
+
+                switch (pieceType) {
+                    case 'p':
+                        moves.push(...this.getPawnMoves(row, col, piece));
+                        break;
+                    case 'n':
+                        moves.push(...this.getKnightMoves(row, col, piece));
+                        break;
+                    case 'b':
+                        moves.push(...this.getBishopMoves(row, col, piece));
+                        break;
+                    case 'r':
+                        moves.push(...this.getRookMoves(row, col, piece));
+                        break;
+                    case 'q':
+                        moves.push(...this.getQueenMoves(row, col, piece));
+                        break;
+                    case 'k':
+                        const kingMoves = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+                        kingMoves.forEach(([dr, dc]) => {
+                            const newRow = row + dr;
+                            const newCol = col + dc;
+                            if (this.isValidSquare(newRow, newCol)) {
+                                const target = this.board[newRow][newCol];
+                                if (!target || this.getPieceColor(target) !== this.getPieceColor(piece)) {
+                                    moves.push([newRow, newCol]);
+                                }
+                            }
+                        });
+                        break;
+                }
+
+                return moves;
+            }
+
+            wouldBeInCheck(from, to) {
+                const originalBoard = this.board.map(row => [...row]);
+                const piece = this.board[from[0]][from[1]];
+                
+                if (!piece) {
+                    this.board = originalBoard;
+                    return false;
+                }
+                
+                this.board[to[0]][to[1]] = piece;
+                this.board[from[0]][from[1]] = null;
+
+                let kingPos = this.kingPositions[this.currentPlayer];
+                if (piece.toLowerCase() === 'k') {
+                    kingPos = to;
+                }
+
+                const inCheck = this.isSquareUnderAttack(kingPos, this.currentPlayer);
+                
+                this.board = originalBoard;
+
+                return inCheck;
+            }
+
+            isLegalMove(from, to) {
+                return this.legalMoves.some(move => move[0] === to[0] && move[1] === to[1]);
+            }
+
+            isValidSquare(row, col) {
+                return row >= 0 && row < 8 && col >= 0 && col < 8;
+            }
+
+            getPieceColor(piece) {
+                if (!piece) return null;
+                return piece === piece.toUpperCase() ? 'white' : 'black';
+            }
+
+            isInCheck(color) {
+                return this.isSquareUnderAttack(this.kingPositions[color], color);
+            }
+
+            isCheckmate() {
+                if (!this.isInCheck(this.currentPlayer)) return false;
+                return !this.hasLegalMoves();
+            }
+
+            isStalemate() {
+                if (this.isInCheck(this.currentPlayer)) return false;
+                return !this.hasLegalMoves();
+            }
+
+            hasLegalMoves() {
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const piece = this.board[row][col];
+                        if (piece && this.getPieceColor(piece) === this.currentPlayer) {
+                            const moves = this.getLegalMovesForPiece(row, col);
+                            if (moves.length > 0) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            switchPlayer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+
+                this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+                
+                document.getElementById('whiteInfo').classList.toggle('active');
+                document.getElementById('blackInfo').classList.toggle('active');
+
+                if (this.gameStarted) {
+                    this.startTimer();
+                }
+            }
+
+            flipBoard() {
+                const boardWrapper = document.getElementById('boardWrapper');
+                this.boardFlipped = !this.boardFlipped;
+                boardWrapper.classList.toggle('flipped');
+            }
+
+            startTimer() {
+                this.timerInterval = setInterval(() => {
+                    if (this.currentPlayer === 'white') {
+                        this.whiteTime--;
+                        this.updateTimerDisplay('whiteTimer', this.whiteTime);
+                        if (this.whiteTime <= 0) {
+                            this.endGame('Black wins on time!');
+                        }
+                    } else {
+                        this.blackTime--;
+                        this.updateTimerDisplay('blackTimer', this.blackTime);
+                        if (this.blackTime <= 0) {
+                            this.endGame('White wins on time!');
+                        }
+                    }
+                }, 1000);
+            }
+
+            updateTimerDisplay(elementId, seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const element = document.getElementById(elementId);
+                element.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
+                
+                if (seconds <= 20) {
+                    element.classList.add('low-time');
+                } else {
+                    element.classList.remove('low-time');
+                }
+            }
+
+            setTimeControl(seconds) {
+                this.whiteTime = seconds;
+                this.blackTime = seconds;
+                this.updateTimerDisplay('whiteTimer', this.whiteTime);
+                this.updateTimerDisplay('blackTimer', this.blackTime);
+                
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                if (this.currentPlayer && this.gameStarted) {
+                    this.startTimer();
+                }
+            }
+
+            highlightLegalMoves() {
+                if (!this.selectedSquare) return;
+                
+                const squares = document.querySelectorAll('.square');
+                squares.forEach(square => {
+                    const row = parseInt(square.dataset.row);
+                    const col = parseInt(square.dataset.col);
+                    
+                    if (this.selectedSquare[0] === row && this.selectedSquare[1] === col) {
+                        square.classList.add('selected');
+                    }
+                    
+                    if (this.legalMoves.some(move => move[0] === row && move[1] === col)) {
+                        square.classList.add('legal-move');
+                        if (this.board[row][col]) {
+                            square.classList.add('has-piece');
+                        }
+                    }
+                });
+            }
+
+            highlightCheck() {
+                if (this.isInCheck(this.currentPlayer)) {
+                    const [row, col] = this.kingPositions[this.currentPlayer];
+                    const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    if (square) square.classList.add('in-check');
+                }
+            }
+
+            updateStatus() {
+                const status = document.getElementById('gameStatus');
+                const overlay = document.getElementById('gameEndOverlay');
+                
+                if (this.isCheckmate()) {
+                    const winner = this.currentPlayer === 'white' ? 'Black' : 'White';
+                    status.textContent = `Checkmate! ${winner} wins!`;
+                    status.className = 'game-status checkmate';
+                    this.endGame(`Checkmate!\n${winner} wins!`, 'checkmate');
+                } else if (this.isStalemate()) {
+                    status.textContent = 'Stalemate! Draw.';
+                    status.className = 'game-status stalemate';
+                    this.endGame('Stalemate!\nGame is a draw', 'stalemate');
+                } else if (this.isInCheck(this.currentPlayer)) {
+                    status.textContent = `${this.currentPlayer.charAt(0).toUpperCase() + this.currentPlayer.slice(1)} is in check!`;
+                    status.className = 'game-status check';
+                } else {
+                    status.textContent = `${this.currentPlayer.charAt(0).toUpperCase() + this.currentPlayer.slice(1)} to move`;
+                    status.className = 'game-status';
+                }
+            }
+
+            endGame(message, type = 'checkmate') {
+                this.gameOver = true;
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                const overlay = document.getElementById('gameEndOverlay');
+                overlay.textContent = message;
+                overlay.className = 'game-end-overlay active ' + type;
+            }
+
+            updateMoveHistory() {
+                const historyDiv = document.getElementById('moveHistory');
+                historyDiv.innerHTML = '';
+
+                for (let i = 0; i < this.moveHistory.length; i += 2) {
+                    const pairDiv = document.createElement('div');
+                    pairDiv.className = 'move-pair';
+
+                    const numberSpan = document.createElement('span');
+                    numberSpan.className = 'move-number';
+                    numberSpan.textContent = `${Math.floor(i / 2) + 1}.`;
+                    pairDiv.appendChild(numberSpan);
+
+                    const whiteMove = document.createElement('span');
+                    whiteMove.className = 'move';
+                    whiteMove.textContent = this.moveHistory[i];
+                    pairDiv.appendChild(whiteMove);
+
+                    if (i + 1 < this.moveHistory.length) {
+                        const blackMove = document.createElement('span');
+                        blackMove.className = 'move';
+                        blackMove.textContent = this.moveHistory[i + 1];
+                        pairDiv.appendChild(blackMove);
+                    }
+
+                    historyDiv.appendChild(pairDiv);
+                }
+
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            }
+
+            updateCapturedPieces() {
+                const whiteCaptured = document.getElementById('whiteCaptured');
+                const blackCaptured = document.getElementById('blackCaptured');
+
+                whiteCaptured.innerHTML = this.capturedPieces.white.map(piece => 
+                    `<div class="captured-piece">${PIECES_SVG[piece]}</div>`
+                ).join('');
+
+                blackCaptured.innerHTML = this.capturedPieces.black.map(piece => 
+                    `<div class="captured-piece">${PIECES_SVG[piece]}</div>`
+                ).join('');
+            }
+
+            getMoveNotation(from, to, piece, captured) {
+                const [fromRow, fromCol] = from;
+                const [toRow, toCol] = to;
+                const pieceType = piece.toUpperCase();
+                const files = 'abcdefgh';
+                
+                let notation = '';
+                
+                if (pieceType !== 'P') {
+                    notation += pieceType;
+                }
+                
+                if (captured || (pieceType === 'P' && fromCol !== toCol)) {
+                    if (pieceType === 'P') {
+                        notation += files[fromCol];
+                    }
+                    notation += 'x';
+                }
+                
+                notation += files[toCol] + (8 - toRow);
+                
+                return notation;
+            }
+
+            playSound(soundData) {
+                try {
+                    const audio = new Audio(soundData);
+                    audio.volume = 0.3;
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+
+            newGame() {
+                this.resetGame();
+            }
+
+            resetGame() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+
+                this.board = this.initializeBoard();
+                this.currentPlayer = 'white';
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.moveHistory = [];
+                this.capturedPieces = { white: [], black: [] };
+                this.lastMove = null;
+                this.enPassantTarget = null;
+                this.castlingRights = {
+                    white: { kingside: true, queenside: true },
+                    black: { kingside: true, queenside: true }
+                };
+                this.kingPositions = { white: [7, 4], black: [0, 4] };
+                this.gameOver = false;
+                this.gameStarted = false;
+                
+                if (this.boardFlipped) {
+                    this.boardFlipped = false;
+                    document.getElementById('boardWrapper').classList.remove('flipped');
+                }
+
+                document.getElementById('whiteInfo').classList.add('active');
+                document.getElementById('blackInfo').classList.remove('active');
+                document.getElementById('gameEndOverlay').classList.remove('active');
+
+                this.renderBoard();
+                this.updateStatus();
+                this.updateMoveHistory();
+                this.updateCapturedPieces();
+            }
+        }
+
+        const game = new ChessGame();
+    </script>
+</body>
+</html>
