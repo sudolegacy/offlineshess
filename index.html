@@ -12,9 +12,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #161512;
-            color: #d0d0d0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #e8e8e8;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,40 +36,65 @@
             gap: 15px;
         }
 
+        .main-board-area.flipped {
+            flex-direction: column-reverse;
+        }
+
         .player-info {
             width: 100%;
-            max-width: 1000px;
-            background: #2b2925;
-            padding: 12px 16px;
-            border-radius: 6px;
+            max-width: 600px;
+            background: #262421;
+            padding: 8px 20px;
+            border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
 
         .player-info.active {
-            background: #3d3935;
-            box-shadow: 0 0 0 2px #759656;
+            background: #302e2b;
+            box-shadow: 0 0 0 3px #81b64c, 0 4px 12px rgba(0,0,0,0.4);
         }
 
         .player-name {
-            font-weight: 600;
-            font-size: 16px;
+            font-weight: 700;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-name::before {
+            font-size: 24px;
+        }
+
+        .player-info:first-of-type .player-name::before {
+            content: '♚';
+        }
+
+        .player-info:last-of-type .player-name::before {
+            content: '♔';
         }
 
         .player-timer {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 700;
-            font-family: 'Courier New', monospace;
-            color: #d0d0d0;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            color: #b8b8b8;
+            background: #1c1a18;
+            padding: 8px 16px;
+            border-radius: 8px;
         }
 
         .player-info.active .player-timer {
-            color: #759656;
+            color: #81b64c;
+            background: #2a2a2a;
         }
 
         .player-timer.low-time {
-            color: #de464f !important;
+            color: #ff6b6b !important;
             animation: pulse 1s infinite;
         }
 
@@ -105,8 +130,11 @@
             grid-template-rows: repeat(8, 1fr);
             width: 1000px;
             height: 1000px;
+            min-width: 1000px;
+            min-height: 1000px;
             border: 3px solid #2b2925;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            will-change: auto;
         }
 
         .square {
@@ -116,6 +144,10 @@
             justify-content: center;
             cursor: pointer;
             transition: background-color 0.15s;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
         }
 
         .square.light {
@@ -182,13 +214,14 @@
         }
 
         .sidebar {
-            background: #2b2925;
-            border-radius: 6px;
-            padding: 20px;
-            width: 300px;
+            background: #262421;
+            border-radius: 16px;
+            padding: 24px;
+            width: 320px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
 
         .controls {
@@ -200,26 +233,35 @@
         button {
             background: #3d3935;
             border: none;
-            color: #d0d0d0;
-            padding: 12px 20px;
-            border-radius: 4px;
+            color: #e8e8e8;
+            padding: 14px 24px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
         button:hover {
-            background: #4d4945;
+            background: #4a4642;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         button.primary {
-            background: #759656;
+            background: linear-gradient(135deg, #81b64c 0%, #6fa03a 100%);
             color: white;
+            font-size: 18px;
+            padding: 16px 32px;
         }
 
         button.primary:hover {
-            background: #85a666;
+            background: linear-gradient(135deg, #8fc054 0%, #7db042 100%);
         }
 
         .time-controls {
@@ -233,62 +275,109 @@
             font-size: 12px;
         }
 
+        select {
+            background: #3d3935;
+            border: 2px solid transparent;
+            color: #e8e8e8;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        select:hover {
+            background: #4a4642;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #81b64c;
+            box-shadow: 0 0 0 3px rgba(129, 182, 76, 0.2);
+        }
+
+        .pre-game-section,
+        .in-game-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pre-game-section.hidden,
+        .in-game-section.hidden {
+            display: none;
+        }
+
         .move-history {
-            background: #161512;
-            border-radius: 4px;
-            padding: 15px;
+            background: #1c1a18;
+            border-radius: 12px;
+            padding: 18px;
             max-height: 400px;
             overflow-y: auto;
             flex: 1;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
         }
 
         .move-history h3 {
-            margin-bottom: 12px;
-            font-size: 14px;
-            color: #959595;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: #9a9a9a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
         .move-pair {
             display: flex;
-            gap: 10px;
-            margin-bottom: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
         }
 
         .move-number {
-            color: #959595;
-            width: 30px;
+            color: #7a7a7a;
+            width: 32px;
+            font-weight: 600;
         }
 
         .move {
             flex: 1;
-            padding: 4px 8px;
-            background: #2b2925;
-            border-radius: 3px;
+            padding: 6px 10px;
+            background: #262421;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .move:hover {
+            background: #302e2b;
         }
 
         .game-status {
             background: #3d3935;
-            padding: 15px;
-            border-radius: 4px;
+            padding: 18px 20px;
+            border-radius: 12px;
             text-align: center;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
         .game-status.check {
-            background: #de464f;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
             color: white;
         }
 
         .game-status.checkmate {
-            background: #759656;
+            background: linear-gradient(135deg, #81b64c 0%, #6fa03a 100%);
             color: white;
             font-size: 18px;
         }
 
         .game-status.stalemate {
-            background: #959595;
+            background: linear-gradient(135deg, #888888 0%, #777777 100%);
             color: white;
         }
 
@@ -310,24 +399,26 @@
         }
 
         .promotion-choices {
-            background: #2b2925;
-            padding: 20px;
-            border-radius: 8px;
+            background: #262421;
+            padding: 24px;
+            border-radius: 16px;
             display: flex;
-            gap: 15px;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }
 
         .promotion-piece {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             cursor: pointer;
-            padding: 10px;
-            border-radius: 6px;
-            transition: background 0.2s;
+            padding: 12px;
+            border-radius: 12px;
+            transition: all 0.2s ease;
         }
 
         .promotion-piece:hover {
             background: #3d3935;
+            transform: scale(1.05);
         }
 
         .game-end-overlay {
@@ -336,16 +427,20 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.96);
             color: white;
-            padding: 40px 60px;
-            border-radius: 12px;
-            font-size: 36px;
+            padding: 48px 72px;
+            border-radius: 20px;
+            font-size: 40px;
             font-weight: 700;
             text-align: center;
             z-index: 100;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-            border: 3px solid #759656;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            border: 4px solid #81b64c;
+        }
+
+        .board-wrapper.flipped .game-end-overlay {
+            transform: translate(-50%, -50%) rotate(180deg);
         }
 
         .game-end-overlay.active {
@@ -353,11 +448,20 @@
         }
 
         .game-end-overlay.checkmate {
-            border-color: #759656;
+            border-color: #81b64c;
         }
 
         .game-end-overlay.stalemate {
-            border-color: #959595;
+            border-color: #888888;
+        }
+
+        h3 {
+            color: #9a9a9a;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
 
         @media (max-width: 1024px) {
@@ -411,28 +515,32 @@
         </div>
 
         <div class="sidebar">
-            <div class="game-status" id="gameStatus">White to move</div>
+            <div class="game-status" id="gameStatus">Select time and start</div>
             
-            <div class="controls">
-                <button class="primary" onclick="game.newGame()">New Game</button>
-                <button onclick="game.resetGame()">Reset</button>
-            </div>
-
-            <div>
-                <h3 style="margin-bottom: 10px; font-size: 14px; color: #959595;">Time Control</h3>
-                <div class="time-controls">
-                    <button class="time-control-btn" onclick="game.setTimeControl(60)">1+0</button>
-                    <button class="time-control-btn" onclick="game.setTimeControl(180)">3+0</button>
-                    <button class="time-control-btn" onclick="game.setTimeControl(300)">5+0</button>
-                    <button class="time-control-btn" onclick="game.setTimeControl(600)">10+0</button>
-                    <button class="time-control-btn" onclick="game.setTimeControl(900)">15+0</button>
-                    <button class="time-control-btn" onclick="game.setTimeControl(1800)">30+0</button>
+            <div class="pre-game-section" id="preGameSection">
+                <div>
+                    <h3>Time Control</h3>
+                    <select id="timeControlSelect" onchange="game.updateTimeFromSelect()">
+                        <option value="60">1 minute</option>
+                        <option value="180">3 minutes</option>
+                        <option value="300">5 minutes</option>
+                        <option value="600" selected>10 minutes</option>
+                        <option value="900">15 minutes</option>
+                        <option value="1800">30 minutes</option>
+                    </select>
                 </div>
+                <button class="primary" onclick="game.startGame()">Start Game</button>
             </div>
 
-            <div class="move-history">
-                <h3>Move History</h3>
-                <div id="moveHistory"></div>
+            <div class="in-game-section hidden" id="inGameSection">
+                <div class="controls">
+                    <button class="primary" onclick="game.newGame()">New Game</button>
+                </div>
+
+                <div class="move-history">
+                    <h3>Move History</h3>
+                    <div id="moveHistory"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -484,7 +592,7 @@
                 this.gameStarted = false;
                 
                 this.renderBoard();
-                this.updateStatus();
+                document.getElementById('gameStatus').textContent = 'Select time and start';
             }
 
             initializeBoard() {
@@ -541,7 +649,7 @@
             }
 
             handleSquareClick(row, col, e) {
-                if (this.gameOver) return;
+                if (this.gameOver || !this.gameStarted) return;
 
                 const piece = this.board[row][col];
                 const pieceColor = this.getPieceColor(piece);
@@ -568,7 +676,7 @@
 
             handleDragStart(row, col, e) {
                 const piece = this.board[row][col];
-                if (this.getPieceColor(piece) !== this.currentPlayer || this.gameOver) {
+                if (this.getPieceColor(piece) !== this.currentPlayer || this.gameOver || !this.gameStarted) {
                     e.preventDefault();
                     return;
                 }
@@ -675,10 +783,6 @@
                     };
                     this.showPromotionDialog();
                     return;
-                }
-
-                if (!this.gameStarted) {
-                    this.gameStarted = true;
                 }
 
                 this.lastMove = { from, to };
@@ -1031,8 +1135,10 @@
 
             flipBoard() {
                 const boardWrapper = document.getElementById('boardWrapper');
+                const mainBoardArea = document.querySelector('.main-board-area');
                 this.boardFlipped = !this.boardFlipped;
                 boardWrapper.classList.toggle('flipped');
+                mainBoardArea.classList.toggle('flipped');
             }
 
             startTimer() {
@@ -1218,6 +1324,23 @@
                 } catch (e) {}
             }
 
+            updateTimeFromSelect() {
+                const select = document.getElementById('timeControlSelect');
+                const seconds = parseInt(select.value);
+                this.whiteTime = seconds;
+                this.blackTime = seconds;
+                this.updateTimerDisplay('whiteTimer', this.whiteTime);
+                this.updateTimerDisplay('blackTimer', this.blackTime);
+            }
+
+            startGame() {
+                this.gameStarted = true;
+                document.getElementById('preGameSection').classList.add('hidden');
+                document.getElementById('inGameSection').classList.remove('hidden');
+                document.getElementById('gameStatus').textContent = 'White to move';
+                this.startTimer();
+            }
+
             newGame() {
                 this.resetGame();
             }
@@ -1246,14 +1369,25 @@
                 if (this.boardFlipped) {
                     this.boardFlipped = false;
                     document.getElementById('boardWrapper').classList.remove('flipped');
+                    document.querySelector('.main-board-area').classList.remove('flipped');
                 }
 
                 document.getElementById('whiteInfo').classList.add('active');
                 document.getElementById('blackInfo').classList.remove('active');
                 document.getElementById('gameEndOverlay').classList.remove('active');
+                
+                document.getElementById('preGameSection').classList.remove('hidden');
+                document.getElementById('inGameSection').classList.add('hidden');
+                document.getElementById('gameStatus').textContent = 'Select time and start';
+
+                const select = document.getElementById('timeControlSelect');
+                const seconds = parseInt(select.value);
+                this.whiteTime = seconds;
+                this.blackTime = seconds;
+                this.updateTimerDisplay('whiteTimer', this.whiteTime);
+                this.updateTimerDisplay('blackTimer', this.blackTime);
 
                 this.renderBoard();
-                this.updateStatus();
                 this.updateMoveHistory();
                 this.updateCapturedPieces();
             }
